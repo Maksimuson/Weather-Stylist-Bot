@@ -1,5 +1,5 @@
 [README.md](https://github.com/user-attachments/files/32499475/README.md)
-# Weather Stylist Bot 👗🌦️
+# Weather Stylist Bot 🧥⛅
 
 A Telegram bot that suggests an outfit based on the current weather in your city. Share your location, and the bot geocodes it, fetches live weather data, and asks Google's Gemini model to recommend a fitting outfit — in English or Ukrainian.
 
