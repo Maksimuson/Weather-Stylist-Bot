@@ -8,6 +8,7 @@ from geopy.geocoders import Nominatim
 from geopy.adapters import AioHTTPAdapter
 from dotenv import load_dotenv
 from google import genai
+from storage import get_user, set_user
 from google.genai import types as genai_types
 from weather import get_weather
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -25,8 +26,6 @@ logger = logging.getLogger(__name__)
 
 router = Router()
 
-# Per-user state: {user_id: {"lang": "en"/"ua", "sex": "male"/"female"}}
-user_data: dict[int, dict] = {}
 
 language_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -58,7 +57,7 @@ sex_keyboard_ua = InlineKeyboardMarkup(
 
 @router.message(CommandStart())
 async def start_command(message: types.Message):
-    user_data[message.from_user.id] = {}
+    await set_user(message.from_user.id, {})
     await message.answer(
         text="Please select your language / Оберіть мову:",
         reply_markup=language_keyboard,
@@ -68,7 +67,9 @@ async def start_command(message: types.Message):
 @router.callback_query(F.data.in_({"lang_en", "lang_ua"}))
 async def process_language(callback: types.CallbackQuery):
     lang = "en" if callback.data == "lang_en" else "ua"
-    user_data.setdefault(callback.from_user.id, {})["lang"] = lang
+    data = await get_user(callback.from_user.id)
+    data["lang"] = lang
+    await set_user(callback.from_user.id, data)
 
     if lang == "en":
         await callback.message.answer("Please select your gender:", reply_markup=sex_keyboard_en)
@@ -81,8 +82,9 @@ async def process_language(callback: types.CallbackQuery):
 @router.callback_query(F.data.in_({"sex_male", "sex_female"}))
 async def process_sex(callback: types.CallbackQuery):
     sex = "male" if callback.data == "sex_male" else "female"
-    data = user_data.setdefault(callback.from_user.id, {})
+    data = await get_user(callback.from_user.id)
     data["sex"] = sex
+    await set_user(callback.from_user.id, data)
     lang = data.get("lang", "en")
 
     builder = ReplyKeyboardBuilder()
@@ -110,7 +112,8 @@ async def process_sex(callback: types.CallbackQuery):
 async def location_handler(message: types.Message):
     lat = message.location.latitude
     lon = message.location.longitude
-    lang = user_data.get(message.from_user.id, {}).get("lang", "en")
+    data = await get_user(message.from_user.id)
+    lang = data.get("lang", "en")
 
     try:
         async with Nominatim(
@@ -152,7 +155,7 @@ async def location_handler(message: types.Message):
         await message.answer(f"Ваше місто: {city}. Тепер знайдемо ідеальний наряд для вас!")
 
     temperature, weather_description, humidity, wind_speed = weather_data
-    sex = user_data.get(message.from_user.id, {}).get("sex", "unisex")
+    sex = data.get("sex", "unisex")
 
     prompt = (
         f"Suggest one stylish {sex} outfit suitable for the current weather in {city}. "

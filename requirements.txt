@@ -1,0 +1,7 @@
+fastapi
+aiogram
+geopy
+aiohttp
+requests
+google-genai
+python-dotenv
