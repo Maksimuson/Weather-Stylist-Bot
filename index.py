@@ -17,8 +17,8 @@ dp.include_router(router)
 app = FastAPI()
 
 
-@app.post("/webhook")
-async def webhook(request: Request):
+@app.post("/{path:path}")
+async def webhook(request: Request, path: str = ""):
     secret = os.getenv("TELEGRAM_SECRET")
     if secret and request.headers.get("X-Telegram-Bot-Api-Secret-Token") != secret:
         raise HTTPException(status_code=403)
