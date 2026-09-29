@@ -1,7 +1,10 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+base = os.path.dirname(os.path.abspath(__file__))
+for p in (os.path.join(base, "src"), os.path.join(base, "..", "src")):
+    if os.path.isdir(p):
+        sys.path.insert(0, p)
 
 from fastapi import FastAPI, Request, HTTPException
 from aiogram import Bot, Dispatcher
